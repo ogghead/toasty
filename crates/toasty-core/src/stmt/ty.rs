@@ -124,6 +124,16 @@ pub enum Type {
     // An array of bytes that is more efficient than List(u8)
     Bytes,
 
+    /// A fixed-precision decimal number.
+    /// See [`rust_decimal::Decimal`].
+    #[cfg(feature = "rust_decimal")]
+    Decimal,
+
+    /// An arbitrary-precision decimal number.
+    /// See [`bigdecimal::BigDecimal`].
+    #[cfg(feature = "bigdecimal")]
+    BigDecimal,
+
     /// An instant in time represented as the number of nanoseconds since the Unix epoch.
     /// See [`jiff::Timestamp`].
     #[cfg(feature = "jiff")]
@@ -208,6 +218,28 @@ impl Type {
         matches!(self, Self::Bytes)
     }
 
+    pub fn is_decimal(&self) -> bool {
+        #[cfg(feature = "rust_decimal")]
+        {
+            matches!(self, Self::Decimal)
+        }
+        #[cfg(not(feature = "rust_decimal"))]
+        {
+            false
+        }
+    }
+
+    pub fn is_big_decimal(&self) -> bool {
+        #[cfg(feature = "bigdecimal")]
+        {
+            matches!(self, Self::BigDecimal)
+        }
+        #[cfg(not(feature = "bigdecimal"))]
+        {
+            false
+        }
+    }
+
     pub fn is_uuid(&self) -> bool {
         matches!(self, Self::Uuid)
     }
@@ -239,6 +271,20 @@ impl Type {
             // Bytes <-> Uuid
             (Value::Uuid(value), Self::Bytes) => Value::Bytes(value.as_bytes().to_vec()),
             (Value::Bytes(value), Self::Uuid) => Value::Uuid(value.try_into()?),
+            // String <-> Decimal
+            #[cfg(feature = "rust_decimal")]
+            (Value::Decimal(value), Self::String) => Value::String(value.to_string()),
+            #[cfg(feature = "rust_decimal")]
+            (Value::String(value), Self::Decimal) => {
+                Value::Decimal(value.parse().expect("could not parse Decimal"))
+            }
+            // String <-> BigDecimal
+            #[cfg(feature = "bigdecimal")]
+            (Value::BigDecimal(value), Self::String) => Value::String(value.to_string()),
+            #[cfg(feature = "bigdecimal")]
+            (Value::String(value), Self::BigDecimal) => {
+                Value::BigDecimal(value.parse().expect("could not parse BigDecimal"))
+            }
             // Record <-> SparseRecord
             (Value::Record(record), Self::SparseRecord(fields)) => {
                 Value::sparse_record(fields.clone(), record)

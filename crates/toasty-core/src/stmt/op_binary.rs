@@ -30,6 +30,44 @@ impl BinaryOp {
             _ => todo!(),
         }
     }
+
+    /// Returns the logical negation of this operator, if one exists.
+    ///
+    /// - `=` → `!=`
+    /// - `!=` → `=`
+    /// - `<` → `>=`
+    /// - `>=` → `<`
+    /// - `>` → `<=`
+    /// - `<=` → `>`
+    /// - `IsA` → `None`
+    pub fn negate(self) -> Option<Self> {
+        match self {
+            Self::Eq => Some(Self::Ne),
+            Self::Ne => Some(Self::Eq),
+            Self::Lt => Some(Self::Ge),
+            Self::Ge => Some(Self::Lt),
+            Self::Gt => Some(Self::Le),
+            Self::Le => Some(Self::Gt),
+            Self::IsA => None,
+        }
+    }
+
+    /// Returns the operator that represents an equivalent comparison when the
+    /// operands are commuted (swapped).
+    ///
+    /// For example, `5 < x` becomes `x > 5`, so `Lt.commute()` returns `Gt`.
+    /// Symmetric operators like `Eq` and `Ne` return themselves.
+    pub fn commute(self) -> Self {
+        match self {
+            Self::Eq => Self::Eq,
+            Self::Ne => Self::Ne,
+            Self::Ge => Self::Le,
+            Self::Gt => Self::Lt,
+            Self::Le => Self::Ge,
+            Self::Lt => Self::Gt,
+            Self::IsA => Self::IsA,
+        }
+    }
 }
 
 impl fmt::Display for BinaryOp {

@@ -1,5 +1,8 @@
+use std::{rc::Rc, sync::Arc};
+
 use crate::{stmt::Id, Model, Result};
 
+use std::borrow::Cow;
 use toasty_core::stmt;
 
 pub trait Primitive: Sized {
@@ -105,6 +108,20 @@ impl<T: Primitive> Primitive for Option<T> {
     }
 }
 
+impl<T> Primitive for Cow<'_, T>
+where
+    T: ToOwned + ?Sized,
+    T::Owned: Primitive,
+{
+    fn ty() -> stmt::Type {
+        <T::Owned as Primitive>::ty()
+    }
+
+    fn load(value: stmt::Value) -> Result<Self> {
+        <T::Owned as Primitive>::load(value).map(Cow::Owned)
+    }
+}
+
 impl Primitive for uuid::Uuid {
     fn ty() -> stmt::Type {
         stmt::Type::Uuid
@@ -127,6 +144,64 @@ impl Primitive for bool {
         match value {
             stmt::Value::Bool(v) => Ok(v),
             _ => anyhow::bail!("cannot convert value to bool: {value:#?}"),
+        }
+    }
+}
+
+impl<T: Primitive> Primitive for Arc<T> {
+    fn ty() -> stmt::Type {
+        T::ty()
+    }
+
+    fn load(value: stmt::Value) -> Result<Self> {
+        <T as Primitive>::load(value).map(Arc::new)
+    }
+}
+
+impl<T: Primitive> Primitive for Rc<T> {
+    fn ty() -> stmt::Type {
+        T::ty()
+    }
+
+    fn load(value: stmt::Value) -> Result<Self> {
+        <T as Primitive>::load(value).map(Rc::new)
+    }
+}
+
+impl<T: Primitive> Primitive for Box<T> {
+    fn ty() -> stmt::Type {
+        T::ty()
+    }
+
+    fn load(value: stmt::Value) -> Result<Self> {
+        <T as Primitive>::load(value).map(Box::new)
+    }
+}
+
+#[cfg(feature = "rust_decimal")]
+impl Primitive for rust_decimal::Decimal {
+    fn ty() -> stmt::Type {
+        stmt::Type::Decimal
+    }
+
+    fn load(value: stmt::Value) -> Result<Self> {
+        match value {
+            stmt::Value::Decimal(v) => Ok(v),
+            _ => anyhow::bail!("cannot convert value to rust_decimal::Decimal {value:#?}"),
+        }
+    }
+}
+
+#[cfg(feature = "bigdecimal")]
+impl Primitive for bigdecimal::BigDecimal {
+    fn ty() -> stmt::Type {
+        stmt::Type::BigDecimal
+    }
+
+    fn load(value: stmt::Value) -> Result<Self> {
+        match value {
+            stmt::Value::BigDecimal(v) => Ok(v),
+            _ => anyhow::bail!("cannot convert value to bigdecimal::BigDecimal {value:#?}"),
         }
     }
 }

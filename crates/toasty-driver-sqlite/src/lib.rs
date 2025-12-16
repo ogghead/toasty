@@ -1,3 +1,6 @@
+mod value;
+pub(crate) use value::Value;
+
 use rusqlite::Connection;
 use std::{
     path::Path,
@@ -116,18 +119,16 @@ impl Driver for Sqlite {
             _ => None,
         };
 
+        let params = params.into_iter().map(Value::from).collect::<Vec<_>>();
+
         if width.is_none() {
-            let count = stmt.execute(rusqlite::params_from_iter(
-                params.iter().map(value_from_param),
-            ))?;
+            let count = stmt.execute(rusqlite::params_from_iter(params.iter()))?;
 
             return Ok(Response::count(count as _));
         }
 
         let mut rows = stmt
-            .query(rusqlite::params_from_iter(
-                params.iter().map(value_from_param),
-            ))
+            .query(rusqlite::params_from_iter(params.iter()))
             .unwrap();
 
         let mut ret = vec![];
@@ -142,7 +143,7 @@ impl Driver for Sqlite {
                     let width = width.unwrap();
 
                     for index in 0..width {
-                        items.push(sqlite_to_toasty(row, index, &ret_tys[index]));
+                        items.push(Value::from_sql(row, index, &ret_tys[index]).into_inner());
                     }
 
                     ret.push(stmt::ValueRecord::from_vec(items).into());
