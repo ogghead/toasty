@@ -7,7 +7,7 @@ impl ToSql for &stmt::Value {
         use stmt::Value::*;
 
         match self {
-            Id(_) => todo!(),
+            Id(value) => fmt!(cx, f, value.to_primitive()),
             Record(value) => fmt!(cx, f, "(" Comma(&value.fields) ")"),
             List(values) => fmt!(cx, f, "(" Comma(values) ")"),
             value => {

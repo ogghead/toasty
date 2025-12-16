@@ -68,6 +68,10 @@ impl Primitive for String {
     fn load(value: stmt::Value) -> Result<Self> {
         match value {
             stmt::Value::String(v) => Ok(v),
+            stmt::Value::Id(ref v) => match v.to_primitive() {
+                stmt::Value::String(v) => Ok(v),
+                _ => anyhow::bail!("cannot convert value to String {value:#?}"),
+            },
             _ => anyhow::bail!("cannot convert value to String {value:#?}"),
         }
     }

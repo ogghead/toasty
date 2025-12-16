@@ -11,7 +11,10 @@ use toasty_core::{
     schema::db::{Schema, Table},
     stmt, Result,
 };
-use toasty_sql as sql;
+use toasty_sql::{
+    self as sql,
+    stmt::{Alteration, ColumnDef},
+};
 use url::Url;
 
 #[derive(Debug)]
@@ -156,7 +159,17 @@ impl Driver for Sqlite {
 
     async fn reset_db(&self, schema: &Schema) -> Result<()> {
         for table in &schema.tables {
-            self.create_table(schema, table)?;
+            self.drop_table(schema, table, true)?;
+            self.create_table(schema, table, false)?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_db(&self, schema: &Schema) -> Result<()> {
+        for table in &schema.tables {
+            self.add_columns(schema, table)?;
+            self.create_table(schema, table, true)?;
         }
 
         Ok(())
@@ -164,16 +177,23 @@ impl Driver for Sqlite {
 }
 
 impl Sqlite {
-    fn create_table(&self, schema: &Schema, table: &Table) -> Result<()> {
+    fn create_table(&self, schema: &Schema, table: &Table, if_not_exists: bool) -> Result<()> {
         let serializer = sql::Serializer::sqlite(schema);
 
         let connection = self.connection.lock().unwrap();
 
         let mut params = vec![];
-        let stmt = serializer.serialize(
-            &sql::Statement::create_table(table, &Capability::SQLITE),
-            &mut params,
-        );
+        let stmt = if if_not_exists {
+            serializer.serialize(
+                &sql::Statement::create_table_if_not_exists(table, &Capability::SQLITE),
+                &mut params,
+            )
+        } else {
+            serializer.serialize(
+                &sql::Statement::create_table(table, &Capability::SQLITE),
+                &mut params,
+            )
+        };
         assert!(params.is_empty());
 
         connection.execute(&stmt, [])?;
@@ -190,6 +210,49 @@ impl Sqlite {
 
             connection.execute(&stmt, [])?;
         }
+        Ok(())
+    }
+
+    /// Drops a table.
+    fn drop_table(&self, schema: &Schema, table: &Table, if_exists: bool) -> Result<()> {
+        let serializer = sql::Serializer::sqlite(schema);
+        let mut params = Vec::new();
+
+        let sql = if if_exists {
+            serializer.serialize(&sql::Statement::drop_table_if_exists(table), &mut params)
+        } else {
+            serializer.serialize(&sql::Statement::drop_table(table), &mut params)
+        };
+
+        assert!(
+            params.is_empty(),
+            "dropping a table shouldn't involve any parameters"
+        );
+
+        let connection = self.connection.lock().unwrap();
+
+        connection.execute(&sql, ())?;
+        Ok(())
+    }
+
+    /// Adds all columns for a table.
+    fn add_columns(&self, schema: &Schema, table: &Table) -> Result<()> {
+        let serializer = sql::Serializer::sqlite(schema);
+        let mut params = Vec::new();
+
+        let connection = self.connection.lock().unwrap();
+
+        for column in &table.columns {
+            let column_def = ColumnDef::from_schema(column, &Capability::SQLITE.storage_types);
+            let sql = serializer.serialize(
+                &sql::Statement::alter_table(table, Alteration::AddColumn(column_def)),
+                &mut params,
+            );
+
+            // SQLite does not support IF NOT EXISTS
+            let _ = connection.execute(&sql, ());
+        }
+
         Ok(())
     }
 }

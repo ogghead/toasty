@@ -10,7 +10,7 @@ pub struct ColumnDef {
 }
 
 impl ColumnDef {
-    pub(crate) fn from_schema(column: &Column, _storage_types: &driver::StorageTypes) -> Self {
+    pub fn from_schema(column: &Column, _storage_types: &driver::StorageTypes) -> Self {
         Self {
             name: column.name.clone(),
             ty: column.storage_ty.clone(),

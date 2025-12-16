@@ -143,7 +143,7 @@ impl ValueStream {
                 if let Some((ty, location)) = &self.ty {
                     assert!(
                         value.is_a(ty),
-                        "expected `{ty:?}`; was={value:#?}; origin={location}"
+                        "buffer expected `{ty:?}`; was={value:#?}; origin={location}"
                     );
                 }
 
@@ -190,13 +190,13 @@ impl ValueStream {
                 match &self.buffer {
                     Buffer::One(value) => assert!(
                         value.is_a(&ty),
-                        "expected `{ty:?}`; was={value:#?}; origin={location}"
+                        "bufferone expected `{ty:?}`; was={value:#?}; origin={location}"
                     ),
                     Buffer::Many(values) => {
                         for value in values {
                             assert!(
                                 value.is_a(&ty),
-                                "expected `{ty:?}`; was={value:#?}; origin={location}"
+                                "buffermany expected `{ty:?}`; was={value:#?}; origin={location}"
                             );
                         }
                     }
@@ -223,7 +223,7 @@ impl Stream for ValueStream {
                 if let Some((ty, location)) = &self.ty {
                     assert!(
                         value.is_a(ty),
-                        "expected `{ty:?}`; was={value:#?}; origin={location}"
+                        "poll_next expected `{ty:?}`; was={value:#?}; origin={location}"
                     );
                 }
             }

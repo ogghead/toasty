@@ -61,7 +61,7 @@ impl MySQL {
         let mut params = Vec::new();
 
         let sql = serializer.serialize(
-            &sql::Statement::create_table(table, &Capability::MYSQL),
+            &sql::Statement::create_table_if_not_exists(table, &Capability::MYSQL),
             &mut params,
         );
 

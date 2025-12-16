@@ -134,4 +134,10 @@ impl Driver for Connection {
         let schema = schema;
         match_db!(self, ref driver => driver.reset_db(schema).await)
     }
+
+    async fn update_db(&self, schema: &Schema) -> Result<()> {
+        #[allow(unused_variables)]
+        let schema = schema;
+        match_db!(self, ref driver => driver.update_db(schema).await)
+    }
 }

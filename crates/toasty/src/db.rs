@@ -63,10 +63,10 @@ impl Db {
         let (tx, rx) = oneshot::channel();
 
         // Send the statement to the execution engine
-        self.in_tx.send((statement.untyped, tx)).unwrap();
+        self.in_tx.send((statement.untyped, tx))?;
 
         // Return the typed result
-        rx.await.unwrap()
+        rx.await?
     }
 
     /// Execute a statement, assume only one record is returned
@@ -99,6 +99,11 @@ impl Db {
     /// TODO: remove
     pub async fn reset_db(&self) -> Result<()> {
         self.engine.driver.reset_db(&self.engine.schema.db).await
+    }
+
+    /// TODO: remove
+    pub async fn update_db(&self) -> Result<()> {
+        self.engine.driver.update_db(&self.engine.schema.db).await
     }
 
     pub fn schema(&self) -> &Schema {

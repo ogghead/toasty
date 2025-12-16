@@ -647,7 +647,8 @@ impl<'a, 'b> LowerStatement<'a, 'b> {
 
                 None
             }
-            (expr, list) => todo!("expr={expr:#?}; list={list:#?}"),
+            (expr, list) => None,
+            // todo!("expr={expr:#?}; list={list:#?}"),
         }
     }
 

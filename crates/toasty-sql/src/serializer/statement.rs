@@ -32,7 +32,7 @@ impl ToSql for &stmt::CreateIndex {
         let cx = cx.scope(table);
 
         fmt!(
-            &cx, f, "CREATE " unique "INDEX " index_name " ON " table_name " (" columns ")"
+            &cx, f, "CREATE " unique "INDEX IF NOT EXISTS " index_name " ON " table_name " (" columns ")"
         );
     }
 }
@@ -43,11 +43,17 @@ impl ToSql for &stmt::CreateTable {
         let name = Ident(&table.name);
         let columns = ColumnsWithConstraints(self);
 
+        let if_not_exists = if self.if_not_exists {
+            "IF NOT EXISTS "
+        } else {
+            ""
+        };
+
         // Create new expression scope to serialize the statement
         let cx = cx.scope(table);
 
         fmt!(
-            &cx, f, "CREATE TABLE " name " (" columns ")"
+            &cx, f, "CREATE TABLE " if_not_exists name " (" columns ")"
         );
     }
 }
@@ -267,6 +273,7 @@ impl ToSql for &stmt::Statement {
         match self {
             stmt::Statement::CreateIndex(stmt) => stmt.to_sql(cx, f),
             stmt::Statement::CreateTable(stmt) => stmt.to_sql(cx, f),
+            stmt::Statement::AlterTable(stmt) => stmt.to_sql(cx, f),
             stmt::Statement::DropTable(stmt) => stmt.to_sql(cx, f),
             stmt::Statement::Delete(stmt) => stmt.to_sql(cx, f),
             stmt::Statement::Insert(stmt) => stmt.to_sql(cx, f),
@@ -412,5 +419,20 @@ impl ToSql for &stmt::Values {
             let rows = Comma(self.rows.iter());
             fmt!(cx, f, "VALUES " rows)
         }
+    }
+}
+
+impl ToSql for &stmt::AlterTable {
+    fn to_sql<P: Params>(self, cx: &ExprContext<'_>, f: &mut super::Formatter<'_, P>) {
+        let table = f.serializer.table(self.table);
+        let name = Ident(&table.name);
+
+        match &self.alteration {
+            stmt::Alteration::AddColumn(column_def) => {
+                fmt!(cx, f, "ALTER TABLE " name " ADD " column_def)
+            }
+        };
+
+        // ALTER TABLE table_name ADD column_name datatype;
     }
 }

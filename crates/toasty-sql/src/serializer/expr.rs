@@ -98,6 +98,15 @@ impl ToSql for &stmt::Expr {
                 let stmt = &*expr.stmt;
                 fmt!(cx, f, "(" stmt ")");
             }
+            Cast(expr) => {
+                fmt!(cx, f, expr.expr);
+                // match expr.ty {
+                //     toasty_core::stmt::Type::Timestamp => fmt!(cx, f, expr.expr),
+                //     _ => todo!("exprty={:#?}", self),
+                // };
+                //
+                // let db_type = expr.ty.
+            }
             Value(expr) => expr.to_sql(cx, f),
             Default => match f.serializer.flavor {
                 Flavor::Postgresql | Flavor::Mysql => fmt!(cx, f, "DEFAULT"),

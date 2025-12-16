@@ -182,6 +182,7 @@ impl Value {
             Self::U64(_) => ty.is_u64(),
             Self::Id(value) => match ty {
                 Type::Id(ty) => value.model_id() == *ty,
+                Type::Null => true,
                 _ => false,
             },
             Self::List(value) => match ty {

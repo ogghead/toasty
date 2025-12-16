@@ -26,4 +26,9 @@ pub trait Driver: Debug + Send + Sync + 'static {
     async fn reset_db(&self, _schema: &Schema) -> crate::Result<()> {
         unimplemented!()
     }
+
+    /// TODO: this will probably go away
+    async fn update_db(&self, _schema: &Schema) -> crate::Result<()> {
+        unimplemented!()
+    }
 }

@@ -1,6 +1,9 @@
 mod column_def;
 pub use column_def::ColumnDef;
 
+mod alter_table;
+pub use alter_table::{AlterTable, Alteration};
+
 mod create_index;
 pub use create_index::CreateIndex;
 
@@ -19,6 +22,7 @@ pub use toasty_core::stmt::*;
 pub enum Statement {
     CreateIndex(CreateIndex),
     CreateTable(CreateTable),
+    AlterTable(AlterTable),
     DropTable(DropTable),
     Delete(Delete),
     Insert(Insert),

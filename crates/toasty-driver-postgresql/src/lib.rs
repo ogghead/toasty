@@ -98,7 +98,7 @@ impl PostgreSQL {
 
         let mut params = Vec::new();
         let sql = serializer.serialize(
-            &sql::Statement::create_table(table, &Capability::POSTGRESQL),
+            &sql::Statement::create_table_if_not_exists(table, &Capability::POSTGRESQL),
             &mut params,
         );
 
